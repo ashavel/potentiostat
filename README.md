@@ -14,7 +14,7 @@ Some specific values include:
 The potentiostat Arduino code sends to the computer the voltage drop on the shunt resistor instead of real current value. To calculate current, this value is divided by the shunt resistor value that should be introduced in the PC program.
 
 -	Void steps.
-Number of readings being ignored (omitted) before the flow of data, corresponding to a specific branch of data, starts. Can be useful in case if omission of noisy first data is needed not only at startup, but also between realizations of all the branches. For most cases, however, we recommend setting this value to zero and using clearly indicated «Wait before» option, adding waiting time at start-up only.
+Number of readings being ignored (omitted) before the flow of data, corresponding to a specific branch of data, starts. Can be useful in case if omission of noisy first data is needed not only at startup, but also between executions of branches. For most cases, however, we recommend setting this value to zero and using clearly indicated «Wait before» option, adding waiting time at start-up only.
 
 -	Wait before.
 Time value, explicitly setting a period of time in seconds the system should wait polarized by starting potential before the execution of scan starts.
