@@ -1,6 +1,6 @@
 This project is a part of article «Building potentiostat from scratch: simple yet precise Arduino-based platform for voltammetry, chronoamperometry and capacitance measurements», summited to Chemistry Education Research and Practice in January 2022.
 The project includes two applications.
-The first one is an Arduino IDE code named firmware_potentiostat.ino in the root of the current depository. It should be uploaded to an Arduino nano board to become functional.
+The first one is an Arduino IDE code named firmware_potentiostat.ino in the root of the current depository. It should be uploaded to an Arduino nano board with the corresponding (desribed in the article) analog schematic to become functional.
 The second application is written in Python and is compiled for Windows and Linux operating systems. To find the Windows version, please go to releases (https://github.com/ashavel/potentiostat/releases) and download Potentiostat_01.0-alpha.zip archive, extract it into a specific folder and execute Potentiostat_0.1.0-alpha.exe.
 
 Program operation
