@@ -6,7 +6,7 @@ The second application is written in Python and is compiled for Windows and Linu
 Program operation:
 Please make sure that the potentiostat, assembled according to the article instructions and with correctly loaded Arduino code, is connected to your PC before you start the application.
 To start the program, tap «Connect» and select the COM port used by your Arduino.
-Four tabs named LSV, CV, Amperometry and Capacitance allow operation in corresponding four modes. Settings are standard for classic potentiostat.
+Four tabs named LSV, CV, Amperometry and Capacitance allow operation in corresponding four modes. Settings are standard for a standard potentiostat software.
 
 Some specific values include:
 
