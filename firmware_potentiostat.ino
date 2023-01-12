@@ -8,7 +8,7 @@
  *
  * This program is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * MERCHANTABILITY or FITNES FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
@@ -31,35 +31,35 @@ short referenceelectrodepin = A2;
 short workelectrodepin = A3;
 
 //~ measurement variables
-short CNTC = 10; //Number of readings taken for averaging. 10 is recommended.
-unsigned long previousMillis;
-unsigned long currentMillis;
-short msdelay;
-unsigned long linesamp;
-int potref = 2047; // CE potential in mV vs GND.
-int Ss;
-int Sp;
-int SpD;
-int Ep;
-int EpD;
-byte Mt;
+short ReadingsForMean = 10; //Number of readings taken for averaging. 10 is recommended.
+unsigned long PreviousMillis;
+unsigned long CurrentMillis;
+short Msdelay;
+unsigned long Linesamples;
+int Potref = 2047; // CE potential in mV vs GND.
+int ScanSpeed;
+int ScanPotential;
+int ScanPotentialDigital;
+int EndPotential;
+int EndPotentialDigital;
+byte MethodType;
 boolean F1 = false;
 boolean F2 = false;
-short j = 0;
-short Vs = 0; // Vs is the set number of idle samples before the data begin to be sent to the serial port
-short Va = 0; // Va is the actual number of idle samples before the data begin to be sent to the serial port
-float v; //Output work electrode potential in mV
-float p; //Output counter electrode potential in mV
-float r; //Output reference electrode potential in mV
-float c; //Output voltage drop on the shunt in mV. To get current in mA, should be divided to the shunt R value in ohm
+short J = 0;
+short VoidSamples = 0; // VoidSamples is the set number of idle samples before the data begin to be sent to the serial port
+short VoidSamplesActual = 0; // VoidSamplesActual is the actual number of idle samples before the data begin to be sent to the serial port
+float WorkElectrodePotential; //Output work electrode potential in mV
+float CounterElectrodePotential; //Output counter electrode potential in mV
+float ReferenceElectrodePotential; //Output reference electrode potential in mV
+float CurrentSignal; //Output voltage drop on the shunt in mV. To get current in mA, should be divided to the shunt R value in ohm
 
 //~ variables for incoming serial data
-boolean is_transmitting = false;
-const byte numChars = 32;
-char receivedChars[numChars]; // an array to store the received data
-// char endMarker = '\n';
-char recvChar;
-char messageFromPC[32] = {0};
+boolean IsTransmitting = false;
+const byte NumChars = 32;
+char ReceivedChars[NumChars]; // an array to store the received data
+// char EndMarker = '\n';
+char RecvChar;
+char MessageFromPc[32] = {0};
 
 //~ I2C
 #define dac_ADDR 0x60 //For DAC devices with A0 pulled HIGH, use 0x61
@@ -72,43 +72,43 @@ void setup() {
   analogReference(EXTERNAL);
   Serial.begin(115200);
   dac.begin(0x60);
-  dac.setVoltage(potref, false); //At the startup, sets the potential of the WE equal to the CE
+  dac.setVoltage(Potref, false); //At the startup, sets the potential of the WE equal to the CE
 }
 
 void RecieveData() {
-  static byte ndx = 0;
-  char rc;
+  static byte Ndx = 0;
+  char ReadCaracter;
   if (Serial.available() > 0 && F1 == false) {
     //Serial.println("Recieval started");
-    rc = Serial.read();
-    receivedChars[ndx] = rc;
-    ndx++;
+    ReadCaracter = Serial.read();
+    ReceivedChars[Ndx] = ReadCaracter;
+    Ndx++;
 
     // '\x02' byte is ASCII code for the "start of text"
-    // if (rc == 2 && receivedChars[ndx - 1] == '\x02') {
+    // if (ReadCaracter == 2 && ReceivedChars[Ndx - 1] == '\x02') {
     // '\x2A' byte is ASCII code for the "*"
-    if (rc == 42 && receivedChars[ndx - 1] == '\x2A') {
-      // clear receivedChars and enable buffer filling
-      memset(receivedChars, 0, sizeof(receivedChars));
-      is_transmitting = true;
-      ndx = 0; // Do not hold the '\x2A' byte
+    if (ReadCaracter == 42 && ReceivedChars[Ndx - 1] == '\x2A') {
+      // clear ReceivedChars and enable buffer filling
+      memset(ReceivedChars, 0, sizeof(ReceivedChars));
+      IsTransmitting = true;
+      Ndx = 0; // Do not hold the '\x2A' byte
     }
 
-    //~ if (rc == '\n' && is_transmitting == true) {
+    //~ if (ReadCaracter == '\n' && IsTransmitting == true) {
     // '\x62' byte is ASCII code for the ">"
-    if (rc == 62 && is_transmitting == true) {
-      is_transmitting = false; // Transmission is off
-      receivedChars[ndx] = '\0'; // Terminate the string
-      ndx = 0; // Counter to zero
+    if (ReadCaracter == 62 && IsTransmitting == true) {
+      IsTransmitting = false; // Transmission is off
+      ReceivedChars[Ndx] = '\0'; // Terminate the string
+      Ndx = 0; // Counter to zero
       Serial.println("Receival terminated");
-      Serial.println(receivedChars);
+      Serial.println(ReceivedChars);
       F1 = true;
       F2 = false;
     }
 
     // Protection against overfloating
-    if (ndx >= numChars) {
-      ndx = numChars - 1;
+    if (Ndx >= NumChars) {
+      Ndx = NumChars - 1;
     }
   }
 }
@@ -116,49 +116,49 @@ void RecieveData() {
 
 void ParseAndSet() {
 
-  // Split the data into parts
+  // Splits the data into parts
 
   if (F1 == true) {
-    char * strtokIndx; // This is used by strtok() as an index
+    char * strtokINdx; // This is used by strtok() as an index
 
-    strtokIndx = strtok(receivedChars, ","); // Get the first part - the string
-    strcpy(messageFromPC, strtokIndx);     // Copy it to messageFromPC
-    Mt = atoi(messageFromPC);             // Convert this part to the integer method code
+    strtokINdx = strtok(ReceivedChars, ","); // Get the first part - the string
+    strcpy(MessageFromPc, strtokINdx);     // Copy it to MessageFromPc
+    MethodType = atoi(MessageFromPc);             // Convert this part to the integer method code
 
-    strtokIndx = strtok(NULL, ",");     // This continues where the previous call left off
-    strcpy(messageFromPC, strtokIndx); // Copy it to messageFromPC
-    Ss = atoi(messageFromPC);         // Convert this part to the integer scanning speed OR scanning time
+    strtokINdx = strtok(NULL, ",");     // This continues where the previous call left off
+    strcpy(MessageFromPc, strtokINdx); // Copy it to MessageFromPc
+    ScanSpeed = atoi(MessageFromPc);         // Convert this part to the integer scanning speed OR scanning time
 
-    strtokIndx = strtok(NULL, ",");     // This continues where the previous call left off
-    strcpy(messageFromPC, strtokIndx); // Copy it to messageFromPC
-    Vs = atoi(messageFromPC);         // Convert this part to an integer number of void samples taken before the measurement starts
+    strtokINdx = strtok(NULL, ",");     // This continues where the previous call left off
+    strcpy(MessageFromPc, strtokINdx); // Copy it to MessageFromPc
+    VoidSamples = atoi(MessageFromPc);         // Convert this part to an integer number of void samples taken before the measurement starts
 
 
-    strtokIndx = strtok(NULL, ",");     // This continues where the previous call left off
-    strcpy(messageFromPC, strtokIndx); // Copy it to messageFromPC
-    Sp = atoi(messageFromPC);         // Convert this part to the integer starting potential
-    SpD = Sp + potref; // Calculate starting potential in DAC digital units
+    strtokINdx = strtok(NULL, ",");     // This continues where the previous call left off
+    strcpy(MessageFromPc, strtokINdx); // Copy it to MessageFromPc
+    ScanPotential = atoi(MessageFromPc);         // Convert this part to the integer starting potential
+    ScanPotentialDigital = ScanPotential + Potref; // Calculate starting potential in DAC digital units
 
-    strtokIndx = strtok(NULL, ",");     // This continues where the previous call left off
-    strcpy(messageFromPC, strtokIndx); // Copy it to messageFromPC
-    Ep = atoi(strtokIndx);            // Convert this part to the integer end potential
-    EpD = Ep + potref; // Calculate the end potential in DAC digital units
+    strtokINdx = strtok(NULL, ",");     // This continues where the previous call left off
+    strcpy(MessageFromPc, strtokINdx); // Copy it to MessageFromPc
+    EndPotential = atoi(strtokINdx);            // Convert this part to the integer end potential
+    EndPotentialDigital = EndPotential + Potref; // Calculate the end potential in DAC digital units
 
 
     // Serial.println("Method code");
-    // Serial.print(Mt);
+    // Serial.print(MethodType);
     // Serial.println();
     // Serial.println("LSV/CV scanning speed mv/s OR Line scanning time s");
-    // Serial.print(Ss);
+    // Serial.print(ScanSpeed);
     // Serial.println();
     // Serial.println("Number of idle measurement steps before data delivery begins");
-    // Serial.print(Vs);
+    // Serial.print(VoidSamples);
     // Serial.println();
     // Serial.println("Starting potential mv OR Line scanning potential");
-    // Serial.print(Sp);
+    // Serial.print(ScanPotential);
     // Serial.println();
     // Serial.println("End potential mv");
-    // Serial.print(Ep);
+    // Serial.print(EndPotential);
     // Serial.println();
     // Serial.println();
 
@@ -167,29 +167,29 @@ void ParseAndSet() {
     F2 = true;
 
     //Check if the parameters are in reasonable ranges
-    if (Mt > 2 || Mt < 1) {Serial.print("Wrong method code"); F2 = false;}
-    if (Vs > 1000 || Vs < 0) {Serial.print("Wrong idle samples number"); F2 = false;}
-    // if (Sp > 2000 || Sp < -2000) {Serial.print("Wrong low potential"); F2 = false;}
-    // if (Ep > 2000 || Ep < -2000) {Serial.print("Wrong high potential"); F2 = false;}
-    // if (Mt == 1) {if (Ss > 150 || Ss < 1) {Serial.print("Wrong scanning speed"); F2 = false;}}
-    // if (Mt == 2) {if (Ss > 36000 || Ss < 1) {Serial.print("Wrong line scanning time"); F2 = false;}}
+    if (MethodType > 2 || MethodType < 1) {Serial.print("Wrong method code"); F2 = false;}
+    if (VoidSamples > 1000 || VoidSamples < 0) {Serial.print("Wrong idle samples number"); F2 = false;}
+    // if (ScanPotential > 2000 || ScanPotential < -2000) {Serial.print("Wrong low potential"); F2 = false;}
+    // if (EndPotential > 2000 || EndPotential < -2000) {Serial.print("Wrong high potential"); F2 = false;}
+    // if (MethodType == 1) {if (ScanSpeed > 150 || ScanSpeed < 1) {Serial.print("Wrong scanning speed"); F2 = false;}}
+    // if (MethodType == 2) {if (ScanSpeed > 36000 || ScanSpeed < 1) {Serial.print("Wrong line scanning time"); F2 = false;}}
 
-    Va = 0;
+    VoidSamplesActual = 0;
 
     // External stop...
-    if (Mt == 0) {
+    if (MethodType == 0) {
       disable();
     }
 
-    if (Mt == 1 && F2 == true) {
-      msdelay = (1000 / Ss);
+    if (MethodType == 1 && F2 == true) {
+      Msdelay = (1000 / ScanSpeed);
       Serial.println("START");
       Serial.println();
     }
 
-    if (Mt == 2) {
-      msdelay = 100;
-      linesamp = Ss * (1000 / msdelay);
+    if (MethodType == 2) {
+      Msdelay = 100;
+      Linesamples = ScanSpeed * (1000 / Msdelay);
       Serial.println("START");
       Serial.println();
     }
@@ -204,33 +204,33 @@ void disable() {
   Serial.println();
   F1 = false;
   F2 = false;
-  Mt = 0;
-  Va = 0;
-  Vs = 0;
+  MethodType = 0;
+  VoidSamplesActual = 0;
+  VoidSamples = 0;
 }
 
 void LSV () {
 
-  if (Mt == 1) {
-    Va++;
+  if (MethodType == 1) {
+    VoidSamplesActual++;
     measure();
-    dac.setVoltage(SpD, false);
-    if (Va > Vs && SpD < EpD) {(SpD++);};
-    if (Va > Vs && SpD > EpD) {(SpD--);};
-    if (Va > Vs && SpD == EpD) {measure(); disable();};
+    dac.setVoltage(ScanPotentialDigital, false);
+    if (VoidSamplesActual > VoidSamples && ScanPotentialDigital < EndPotentialDigital) {(ScanPotentialDigital++);};
+    if (VoidSamplesActual > VoidSamples && ScanPotentialDigital > EndPotentialDigital) {(ScanPotentialDigital--);};
+    if (VoidSamplesActual > VoidSamples && ScanPotentialDigital == EndPotentialDigital) {measure(); disable();};
   }
 }
 
 void Line() {
-  if (Mt == 2 && linesamp > 0) {
-    Va++;
+  if (MethodType == 2 && Linesamples > 0) {
+    VoidSamplesActual++;
     measure();
-    if (Va > Vs) {
-      (linesamp--);
+    if (VoidSamplesActual > VoidSamples) {
+      (Linesamples--);
     };
   }
 
-  if (Mt == 2 && linesamp == 0) {
+  if (MethodType == 2 && Linesamples == 0) {
     measure();
     disable();
   }
@@ -238,40 +238,40 @@ void Line() {
 
 
 void measure () {
-  dac.setVoltage(SpD, false);
-  v = 0;
-  c = 0;
-  p = 0;
-  r = 0;
-  float cnr_delta;
-  if (Va > Vs) {
-    for (j = 0; j < CNTC; j++) {
-      v = v + analogRead(workelectrodepin);
-      p = p + analogRead(counterelectrodepin);
-      c = c + analogRead(currentmeasurepin);
-      r = r + analogRead(referenceelectrodepin);
+  dac.setVoltage(ScanPotentialDigital, false);
+  WorkElectrodePotential = 0;
+  CurrentSignal = 0;
+ CounterElectrodePotential = 0;
+  ReferenceElectrodePotential = 0;
+  float Cnr_delta;
+  if (VoidSamplesActual > VoidSamples) {
+    for (J = 0; J < ReadingsForMean; J++) {
+      WorkElectrodePotential = WorkElectrodePotential + analogRead(workelectrodepin);
+      CounterElectrodePotential = CounterElectrodePotential + analogRead(counterelectrodepin);
+      CurrentSignal = CurrentSignal + analogRead(currentmeasurepin);
+      ReferenceElectrodePotential = ReferenceElectrodePotential + analogRead(referenceelectrodepin);
     }
-    v = (v - r) * 4 / CNTC;
-    c = (p - c) * 4 / CNTC;
-    cnr_delta = potref - p * 4 / CNTC;
+    WorkElectrodePotential = (WorkElectrodePotential - ReferenceElectrodePotential) * 4 / ReadingsForMean;
+    CurrentSignal = (CounterElectrodePotential - CurrentSignal) * 4 / ReadingsForMean;
+    Cnr_delta = Potref - CounterElectrodePotential * 4 / ReadingsForMean;
 
-    if (cnr_delta > 500) {
+    if (Cnr_delta > 500) {
       disable();
       Serial.println("EMERGENCY!!");
       Serial.print("Delta Ref is ");
-      Serial.print(cnr_delta);
+      Serial.print(Cnr_delta);
       Serial.println(" mV");
 
     }
-    Serial.print(currentMillis);
+    Serial.print(CurrentMillis);
     Serial.print(",");
     Serial.print(-1);
     Serial.print(",");
-    Serial.print(cnr_delta);
+    Serial.print(Cnr_delta);
     Serial.print(",");
-    Serial.print(v);
+    Serial.print(WorkElectrodePotential);
     Serial.print(",");
-    Serial.print(c);
+    Serial.print(CurrentSignal);
     Serial.print(",");
     //Serial.print(0,4);
     //Serial.print(",");
@@ -285,9 +285,9 @@ void measure () {
 void loop() {
   RecieveData();
   ParseAndSet();
-  currentMillis = millis();
-  if (currentMillis - previousMillis >= msdelay) {
-    previousMillis = currentMillis;
+  CurrentMillis = millis();
+  if (CurrentMillis - PreviousMillis >= Msdelay) {
+    PreviousMillis = CurrentMillis;
     // Serial.println("Millis passed");
     LSV();
     Line();
